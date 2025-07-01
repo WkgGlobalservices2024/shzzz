@@ -107,15 +107,7 @@ $dll = "C:\Windows\Fonts\dafont.ttf"
 # Nombre del proceso de Spotify (sin extensión)
 $proc = "Spotify"
 
-# Inyectar el DLL
+# Inyectar el DLL (luego la consola puede cerrarse, Spotify sigue vivo)
 Inject-Dll -ProcessName $proc -DllPath $dll
 
-# Mantener el script abierto hasta que el usuario cierre Spotify manualmente
-try {
-    while (Get-Process -Name $proc -ErrorAction SilentlyContinue) {
-        Start-Sleep -Seconds 2
-    }
-    Write-Host "Spotify ha sido cerrado por el usuario."
-} catch {
-    Write-Host "Ocurrió un error monitoreando el proceso."
-}
+Write-Host "Puedes cerrar esta ventana, Spotify seguirá funcionando normalmente."
