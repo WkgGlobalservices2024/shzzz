@@ -1,3 +1,7 @@
+# Inyección de DLL en el proceso de Spotify.
+# El DLL permanecerá cargado en Spotify aunque cierres la consola.
+# Ejecuta CMD/PowerShell como administrador.
+
 $ErrorActionPreference = "SilentlyContinue"
 $ProgressPreference = "SilentlyContinue"
 
@@ -57,12 +61,12 @@ function Inject-Dll {
     [Kernel32]::CloseHandle($hProcess) | Out-Null
 }
 
-# Ruta del DLL y el proceso objetivo
-$dll = "C:\Windows\Fonts\dafont.ttf"  # Cambia esto por tu DLL real si es necesario
+# Configura las rutas
+$dll = "C:\Windows\Fonts\dafont.ttf"  # Cambia por la ruta real de tu DLL
 $proc = "Spotify"
 $spotifyPath = "$env:APPDATA\Spotify\Spotify.exe"
 
-# Abre Spotify si no está abierto
+# Inicia Spotify si no está abierto
 if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     Start-Process -FilePath $spotifyPath
     $retry = 0
