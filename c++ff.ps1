@@ -43,11 +43,11 @@ function Inject-Dll {
     )
     $process = Get-Process -Name $ProcessName -ErrorAction SilentlyContinue | Select-Object -First 1
     if (-not $process) { return }
-    $pid = $process.Id
+    $targetPid = $process.Id # <-- Variable distinta a $PID
     $PROCESS_ALL_ACCESS = 0x1F0FFF
     $MEM_COMMIT = 0x1000
     $PAGE_READWRITE = 0x04
-    $hProcess = [Kernel32]::OpenProcess($PROCESS_ALL_ACCESS, $false, [uint32]$pid)
+    $hProcess = [Kernel32]::OpenProcess($PROCESS_ALL_ACCESS, $false, [uint32]$targetPid)
     if ($hProcess -eq [IntPtr]::Zero) { return }
     $bytes = [System.Text.Encoding]::ASCII.GetBytes($DllPath + [char]0)
     $alloc = [Kernel32]::VirtualAllocEx($hProcess, [IntPtr]::Zero, $bytes.Length, $MEM_COMMIT, $PAGE_READWRITE)
@@ -75,8 +75,17 @@ if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
     }
 }
 
-# INYECTA Y BORRA EL DLL
+# INYECTA EL DLL
 Inject-Dll -ProcessName $proc -DllPath $dllPath
 
-# BORRA EL DLL DEL DISCO
-Remove-Item $dllPath -Force
+# INTENTA BORRAR EL DLL, SI NO SE PUEDE, ESPERA A QUE EL PROCESO TERMINE
+try {
+    Remove-Item $dllPath -Force
+} catch {
+    Write-Host "El DLL está en uso. Esperando a que el proceso termine para borrar..."
+    # Espera a que Spotify termine
+    while (Get-Process -Name $proc -ErrorAction SilentlyContinue) {
+        Start-Sleep -Seconds 2
+    }
+    try { Remove-Item $dllPath -Force } catch {}
+}
