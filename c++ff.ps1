@@ -106,8 +106,18 @@ function Inject-Dll {
 $dll = "C:\Windows\Fonts\dafont.ttf"
 # Nombre del proceso de Spotify (sin extensión)
 $proc = "Spotify"
+# Ruta completa al ejecutable de Spotify (ajusta si es diferente en tu sistema)
+$spotifyPath = "$env:APPDATA\Spotify\Spotify.exe"
 
-# Inyectar el DLL (luego la consola puede cerrarse, Spotify sigue vivo)
+# Si Spotify NO está abierto, lo inicia como proceso independiente
+if (-not (Get-Process -Name $proc -ErrorAction SilentlyContinue)) {
+    Write-Host "Spotify no está abierto. Iniciando..."
+    Start-Process -FilePath $spotifyPath
+    # Espera a que el proceso Spotify abra realmente
+    Start-Sleep -Seconds 3
+}
+
+# Inyectar el DLL (la consola puede cerrarse después, Spotify sigue funcionando)
 Inject-Dll -ProcessName $proc -DllPath $dll
 
 Write-Host "Puedes cerrar esta ventana, Spotify seguirá funcionando normalmente."
