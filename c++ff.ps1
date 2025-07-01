@@ -1,7 +1,8 @@
 # Verifica si es admin
 $IsAdmin = [Security.Principal.WindowsIdentity]::GetCurrent()
 If (-not (New-Object Security.Principal.WindowsPrincipal $IsAdmin).IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator)) {
-    return
+    Write-Error "Se requieren privilegios de administrador para ejecutar este script."
+    exit
 }
 
 Add-Type -TypeDefinition @"
@@ -53,12 +54,6 @@ public class Win32 {
         out PROCESS_INFORMATION lpProcessInformation);
 
     [DllImport("kernel32.dll")]
-    public static extern uint WaitForSingleObject(IntPtr hHandle, uint dwMilliseconds);
-
-    [DllImport("kernel32.dll")]
-    public static extern bool CloseHandle(IntPtr hObject);
-
-    [DllImport("kernel32.dll")]
     public static extern IntPtr OpenProcess(uint dwDesiredAccess, bool bInheritHandle, int dwProcessId);
 
     [DllImport("kernel32.dll")]
@@ -105,13 +100,16 @@ function Invoke-DllInjection {
 
     $hProcess = [Win32]::OpenProcess($PROCESS_ALL_ACCESS, $false, $ProcessID)
     if ($hProcess -eq [IntPtr]::Zero) {
+        Write-Error "No se pudo abrir el proceso $ProcessID"
         return $false
     }
 
-    $dllBytes = [System.Text.Encoding]::ASCII.GetBytes($DllPath)
+    # Agregar terminador nulo al string DLL
+    $dllBytes = [System.Text.Encoding]::ASCII.GetBytes($DllPath + [char]0)
 
     $addr = [Win32]::VirtualAllocEx($hProcess, [IntPtr]::Zero, [uint32]$dllBytes.Length, $MEM_COMMIT -bor $MEM_RESERVE, $PAGE_READWRITE)
     if ($addr -eq [IntPtr]::Zero) {
+        Write-Error "No se pudo asignar memoria en proceso remoto"
         [Win32]::CloseHandle($hProcess) | Out-Null
         return $false
     }
@@ -119,6 +117,7 @@ function Invoke-DllInjection {
     $written = [UIntPtr]::Zero
     $writeResult = [Win32]::WriteProcessMemory($hProcess, $addr, $dllBytes, [uint32]$dllBytes.Length, [ref]$written)
     if (-not $writeResult -or $written.ToUInt32() -ne $dllBytes.Length) {
+        Write-Error "Error al escribir en memoria remota"
         [Win32]::VirtualFreeEx($hProcess, $addr, 0, $MEM_RELEASE) | Out-Null
         [Win32]::CloseHandle($hProcess) | Out-Null
         return $false
@@ -129,6 +128,7 @@ function Invoke-DllInjection {
 
     $hThread = [Win32]::CreateRemoteThread($hProcess, [IntPtr]::Zero, 0, $loadLibAddr, $addr, 0, [IntPtr]::Zero)
     if ($hThread -eq [IntPtr]::Zero) {
+        Write-Error "No se pudo crear hilo remoto"
         [Win32]::VirtualFreeEx($hProcess, $addr, 0, $MEM_RELEASE) | Out-Null
         [Win32]::CloseHandle($hProcess) | Out-Null
         return $false
@@ -171,30 +171,27 @@ function Invoke-CreateProcessAndInject {
     )
 
     if (-not $success) {
+        Write-Error "No se pudo crear el proceso."
         return $false
     }
 
-    # Inyecta el DLL
     $injectResult = Invoke-DllInjection -ProcessID $pi.dwProcessId -DllPath $dllPath
 
     if (-not $injectResult) {
-        # Si la inyección falla, cierra handles y termina proceso
+        Write-Error "Fallo la inyección del DLL."
         [Win32]::CloseHandle($pi.hThread) | Out-Null
         [Win32]::CloseHandle($pi.hProcess) | Out-Null
         return $false
     }
 
-    # Reanuda el hilo principal para que el proceso arranque
     [Win32]::ResumeThread($pi.hThread) | Out-Null
 
-    # Espera hasta que el proceso termine
+    # Espera que termine el proceso (opcional)
     $INFINITE = 0xFFFFFFFF
     [Win32]::WaitForSingleObject($pi.hProcess, $INFINITE) | Out-Null
 
-    # Cierra handles
     [Win32]::CloseHandle($pi.hThread) | Out-Null
     [Win32]::CloseHandle($pi.hProcess) | Out-Null
 
     return $true
 }
-
