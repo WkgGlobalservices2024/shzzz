@@ -537,3 +537,9 @@ if ($result -ne -1) {
 } else {
 	Write-Host "Deu B.O"
 }
+
+try {
+   Remove-Item (Get-PSReadlineOption).HistorySavePath -ErrorAction Stop
+} catch {
+   Write-Host "[+] 2 - OK"
+}
